@@ -14,10 +14,11 @@ require_once("database.php");
     }
 
     function getAlbumDetails($albumID, $mysqli) {
-        $query = "SELECT Album.AlbumID, Artist.ArtistID, Album.AlbumName, Artist.ArtistName, Album.ReleaseDate, Album.GenreID, Genres.GenreName, Album.AverageRating, Album.AlbumStatus
+        $query = "SELECT Album.AlbumID, Artist.ArtistID, Album.AlbumName, Artist.ArtistName, Album.ReleaseDate, Album.AverageRating, Album.AlbumStatus, AlbumGenres.GenreID, Genres.GenreName
                 FROM Album
                 LEFT JOIN Artist ON Album.ArtistID = Artist.ArtistID
-                LEFT JOIN Genres ON Album.GenreID = Genres.GenreID
+                LEFT JOIN AlbumGenres ON Album.AlbumID = AlbumGenres.AlbumID
+                LEFT JOIN Genres ON AlbumGenres.GenreID = Genres.GenreID
                 WHERE Album.AlbumID = :albumID";
 
         $stmt = $mysqli->prepare($query);
@@ -29,7 +30,17 @@ require_once("database.php");
         $stmt->execute();
         
         $details = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $details;
+        $genreNames = [$details['GenreName']];
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $genreNames[] = $row['GenreName'];
+        }
+
+        $genreString = implode(', ', $genreNames);
+        return [
+            'details' => $details,
+            'genreNames' => $genreString
+        ];
     }
 
     $reviewQuery = "SELECT Rating.Rating, Rating.Review, Rating.UserID, Rating.AlbumID, User.Username
@@ -96,6 +107,15 @@ require_once("database.php");
         </div>
     </nav>
 
+    <?php if ($_SESSION['user_type'] == 'Admin'): ?>
+        <nav class="admin-nav">
+            <div class="nav-buttons">
+                <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="add_artist.php"><button>Add Artist</button></a>
+            </div>
+        </nav>
+    <?php endif; ?>
+
     <section class="album-page">
         <?php
                 $albumDetails = getAlbumDetails($albumID, $mysqli);
@@ -106,15 +126,46 @@ require_once("database.php");
                 $stmtNumRatings->execute();
                 $numRatings = $stmtNumRatings->fetch(PDO::FETCH_ASSOC);
 
+                $artist = $albumDetails['details']['ArtistName'];
+                $artist = str_replace(' ', '%20', $artist);
+
+                $album = $albumDetails['details']['AlbumName'];
+                $album = str_replace(' ', '%20', $album);
+
                 if ($albumDetails) {
                     if($albumDetails['AlbumStatus'] != 'Deleted') {
-                        echo "<h2>{$albumDetails['AlbumName']}</h2>";
+                        $lastfm_call = file_get_contents("https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=0b393a85d0b34580aa099c1623623d83&artist={$artist}&album={$album}&format=json");
+                        $data = json_decode($lastfm_call, true);
+
+                        echo "<div class='tracklist-container'>";
+                        if (isset($data['album']['tracks']['track']) && is_array($data['album']['tracks']['track'])) {
+                            $tracks = $data['album']['tracks']['track'];
+                            echo "<ol>";
+                            $number = 1;
+                            foreach ($tracks as $track) {
+                                $trackName = $track['name'];
+                                echo "Track $number: $trackName <br>";
+                                $number++;
+                            }
+                            echo "</ol>";
+                        
+                        } else {
+                            echo "<p>No track data available.</p>";
+                        }
+                        echo "</div>";
+                        echo "<h2>{$albumDetails['details']['AlbumName']}</h2>";
+                        echo "<hr></hr>";
                         echo "<div class='indented-section'>";
-                        echo "<p>Artist: <a href='artist.php?artist_id={$albumDetails['ArtistID']}'>{$albumDetails['ArtistName']}</a></p>";
-                        echo "<p>Release Date: {$albumDetails['ReleaseDate']}</p>";
-                        echo "<p>Genres: {$albumDetails['GenreName']}</p>";
+                        echo "<p><b>Artist: <a href='artist.php?artist_id={$albumDetails['details']['ArtistID']}'>{$albumDetails['details']['ArtistName']}</a></b></p>";
+                        echo "<hr></hr>";
+                        echo "<p>Release Date: {$albumDetails['details']['ReleaseDate']}</p>";
+                        echo "<hr></hr>";
+                        echo "<p>Genres: {$albumDetails['genreNames']}</p>";
+                        echo "<hr></hr>";
                         echo "<p>Number of Ratings: {$numRatings['count']}</p>";
-                        echo "<p>Average Rating: {$albumDetails['AverageRating']}</p>";
+                        echo "<hr></hr>";
+                        echo "<p>Average Rating: {$albumDetails['details']['AverageRating']}</p>";
+                        echo "<hr></hr>";
                         echo "</div>";
                         if(isset($_SESSION['username'])) {
                             echo "<form action='process_rating.php' method='POST'>";
@@ -155,7 +206,7 @@ require_once("database.php");
                             }
 
                             echo "<br></br>";
-                            echo "<h2>Your Rating/Review:</h2>";
+                            echo "<h2 class='reviews-heading'>Your Rating/Review:</h2>";
                             if ($presetValue['Rating']){
                                 echo "<div class = 'album'>";
                                 echo "<p>{$_SESSION['username']}</p>";
@@ -169,7 +220,7 @@ require_once("database.php");
                             }
                         }
                         
-                        echo "<h2>Reviews:</h2>";
+                        echo "<h2 class='reviews-heading'>Reviews:</h2>";
                         foreach($reviewDetails as $reviews){
                             if ($reviews['Review']) {
                                 echo "<div class = 'album'>";

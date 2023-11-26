@@ -15,16 +15,19 @@ WHERE Rating.UserID = :userID";
 $stmt = $mysqli->prepare($query);
 $stmt->bindParam(":userID", $profile_id, PDO::PARAM_INT);
 $stmt->execute();
-
 $userRatings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $settingsQuery = "SELECT Biography, FavoriteArtists, FavoriteGenres, FavoritePlaylist, LastFmUsername FROM UserSettings WHERE UserID = :userID";
-
 $settingsStmt = $mysqli->prepare($settingsQuery);
 $settingsStmt->bindParam(":userID", $profile_id, PDO::PARAM_INT);
 $settingsStmt->execute();
-
 $userDetails = $settingsStmt->fetch(PDO::FETCH_ASSOC);
+
+$userQuery = "SELECT UserType FROM User WHERE UserID = :userID";
+$userStmt = $mysqli->prepare($userQuery);
+$userStmt->bindParam(":userID", $profile_id, PDO::PARAM_INT);
+$userStmt->execute();
+$userType = $userStmt->fetch(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -79,6 +82,15 @@ $userDetails = $settingsStmt->fetch(PDO::FETCH_ASSOC);
         </div>
     </nav>
 
+    <?php if ($_SESSION['user_type'] == 'Admin'): ?>
+        <nav class="admin-nav">
+            <div class="nav-buttons">
+                <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="add_artist.php"><button>Add Artist</button></a>
+            </div>
+        </nav>
+    <?php endif; ?>
+
     <section class="profile-page">
         <?php
         $usernameQuery = "SELECT Username FROM User WHERE UserID = :userID";
@@ -89,9 +101,28 @@ $userDetails = $settingsStmt->fetch(PDO::FETCH_ASSOC);
         $username = $usernameStmt->fetch(PDO::FETCH_ASSOC);
 
             echo "<h><b>Profile: {$username['Username']}</b></h>";
+            if ($userType['UserType'] == 'Artist'){
+                $artistQuery = "SELECT Artist.ArtistName, UserArtist.ArtistID FROM Artist LEFT JOIN UserArtist ON Artist.ArtistID = UserArtist.ArtistID WHERE UserArtist.UserID = :userID";
+                $artistStmt = $mysqli->prepare($artistQuery);
+                $artistStmt->bindParam(':userID', $profile_id, PDO::PARAM_INT);
+                $artistStmt->execute();
+                $details = $artistStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (!empty($details)) {
+                    $artistName = $details[0]['ArtistName'];
+                    $artistID = $details[0]['ArtistID'];
+                    echo "<p>This is a verified artist account, check out their artist page here: <a href='artist.php?artist_id={$artistID}'>{$artistName}</a></p>";
+                } else {
+                    echo "<p>This is a verified artist account, but no artist details found.</p>";
+                }
+            }
+            echo "<hr></hr>";
             echo "<p>Biography: {$userDetails['Biography']}</p>";
+            echo "<hr></hr>";
             echo "<p>Favorite Artists: {$userDetails['FavoriteArtists']}</p>";
+            echo "<hr></hr>";
             echo "<p>Favorite Genres: {$userDetails['FavoriteGenres']}</p>";
+            echo "<hr></hr>";
             if ($userDetails['FavoritePlaylist']) {
                 echo "<p>Favorite Playlist: </p>";
                 $playlist = $userDetails['FavoritePlaylist'];
@@ -123,7 +154,7 @@ $userDetails = $settingsStmt->fetch(PDO::FETCH_ASSOC);
                 $lastfm_call = file_get_contents("https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user={$lastfmuser}&period={$time}&api_key=0b393a85d0b34580aa099c1623623d83&format=json");
                 $lastfm_data = json_decode($lastfm_call);
                 $lastfm_clean = $lastfm_data->topartists->artist;
-                $lastfm_clean = array_slice($lastfm_clean, 0, 10);
+                $lastfm_clean = array_slice($lastfm_clean, 0, 5);
 
                 echo "<div class='lastfm-artists-container'>";
                 foreach ($lastfm_clean as $data) {
@@ -160,7 +191,7 @@ $userDetails = $settingsStmt->fetch(PDO::FETCH_ASSOC);
             
             foreach ($userRatings as $ratings) {
                 if ($ratings['AlbumStatus'] != 'Deleted' && ($selectedRating == 'All' || $ratings['Rating'] == $selectedRating)) {
-                    echo "<div class='album'>";
+                    echo "<div class='ratings'>";
                     echo "<p>Rating: {$ratings['Rating']}</p>";
                     echo "<h3><a href='album.php?album_id={$ratings['AlbumID']}'>{$ratings['AlbumName']}</a> by <a href='artist.php?artist_id={$ratings['ArtistID']}'>{$ratings['ArtistName']}</a></h3>";
                     if ($ratings['Review']) {

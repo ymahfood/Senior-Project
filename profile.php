@@ -12,20 +12,22 @@ FROM Rating
 LEFT JOIN Album ON Rating.AlbumID = Album.AlbumID
 LEFT JOIN Artist ON Album.ArtistID = Artist.ArtistID
 WHERE Rating.UserID = :userID";
-
 $stmt = $mysqli->prepare($query);
 $stmt->bindParam(":userID", $user_id, PDO::PARAM_INT);
 $stmt->execute();
-
 $userRatings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $settingsQuery = "SELECT Biography, FavoriteArtists, FavoriteGenres, FavoritePlaylist, LastFmUsername FROM UserSettings WHERE UserID = :userID";
-
 $settingsStmt = $mysqli->prepare($settingsQuery);
 $settingsStmt->bindParam(":userID", $user_id, PDO::PARAM_INT);
 $settingsStmt->execute();
-
 $userDetails = $settingsStmt->fetch(PDO::FETCH_ASSOC);
+
+$userQuery = "SELECT UserType FROM User WHERE UserID = :userID";
+$userStmt = $mysqli->prepare($userQuery);
+$userStmt->bindParam(":userID", $user_id, PDO::PARAM_INT);
+$userStmt->execute();
+$userType = $userStmt->fetch(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -80,15 +82,43 @@ $userDetails = $settingsStmt->fetch(PDO::FETCH_ASSOC);
         </div>
     </nav>
 
+    <?php if ($_SESSION['user_type'] == 'Admin'): ?>
+        <nav class="admin-nav">
+            <div class="nav-buttons">
+                <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="add_artist.php"><button>Add Artist</button></a>
+            </div>
+        </nav>
+    <?php endif; ?>
+
     <section class="profile-page">
         <?php
         
 
         if (isset($_SESSION['user_id'])) {
             echo "<h><b>Profile: $username</b></h>";
+            if ($userType['UserType'] == 'Artist'){
+                $artistQuery = "SELECT Artist.ArtistName, UserArtist.ArtistID FROM Artist LEFT JOIN UserArtist ON Artist.ArtistID = UserArtist.ArtistID WHERE UserArtist.UserID = :userID";
+                $artistStmt = $mysqli->prepare($artistQuery);
+                $artistStmt->bindParam(':userID', $user_id, PDO::PARAM_INT);
+                $artistStmt->execute();
+                $details = $artistStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (!empty($details)) {
+                    $artistName = $details[0]['ArtistName'];
+                    $artistID = $details[0]['ArtistID'];
+                    echo "<p>This is a verified artist account, check out their artist page here: <a href='artist.php?artist_id={$artistID}'>{$artistName}</a></p>";
+                } else {
+                    echo "<p>This is a verified artist account, but no artist details found.</p>";
+                }
+            }
+            echo "<hr></hr>";
             echo "<p>Biography: {$userDetails['Biography']}</p>";
+            echo "<hr></hr>";
             echo "<p>Favorite Artists: {$userDetails['FavoriteArtists']}</p>";
+            echo "<hr></hr>";
             echo "<p>Favorite Genres: {$userDetails['FavoriteGenres']}</p>";
+            echo "<hr></hr>";
             if ($userDetails['FavoritePlaylist']) {
                 echo "<p>Favorite Playlist: </p>";
                 $playlist = $userDetails['FavoritePlaylist'];
@@ -155,7 +185,7 @@ $userDetails = $settingsStmt->fetch(PDO::FETCH_ASSOC);
             
             foreach ($userRatings as $ratings) {
                 if ($ratings['AlbumStatus'] != 'Deleted' && ($selectedRating == 'All' || $ratings['Rating'] == $selectedRating)) {
-                    echo "<div class='album'>";
+                    echo "<div class='ratings'>";
                     echo "<p>Rating: {$ratings['Rating']}</p>";
                     echo "<h3><a href='album.php?album_id={$ratings['AlbumID']}'>{$ratings['AlbumName']}</a> by <a href='artist.php?artist_id={$ratings['ArtistID']}'>{$ratings['ArtistName']}</a></h3>";
                     if ($ratings['Review']) {

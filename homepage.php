@@ -6,7 +6,7 @@ require_once("database.php");
     $mysqli = Database::dbConnect();
 	$mysqli->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $genreQuery = "SELECT GenreID, GenreName FROM Genres";
+    $genreQuery = "SELECT GenreID, GenreName FROM Genres LIMIT 10";
         
     $genreStmt = $mysqli->prepare($genreQuery);
     $genreStmt -> execute();
@@ -65,6 +65,14 @@ require_once("database.php");
         </div>
     </nav>
 
+    <?php if ($_SESSION['user_type'] == 'Admin'): ?>
+        <nav class="admin-nav">
+            <div class="nav-buttons">
+                <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="add_artist.php"><button>Add Artist</button></a>
+            </div>
+        </nav>
+    <?php endif; ?>
     <section class="featured-albums">
         <h2>Featured Albums</h2>
 
@@ -72,9 +80,11 @@ require_once("database.php");
         foreach($genres as $genre) {
             $gid = $genre['GenreID'];
 
-            $query = "SELECT Album.AlbumID, Artist.ArtistID, Album.AlbumName, Artist.ArtistName, Album.AverageRating, Album.ReleaseDate, Album.AlbumStatus
-            FROM Album LEFT JOIN Artist ON Album.ArtistID = Artist.ArtistID
-            WHERE Album.GenreID = :genreID
+            $query = "SELECT Album.AlbumID, Artist.ArtistID, Album.AlbumName, Artist.ArtistName, Album.AverageRating, Album.ReleaseDate, Album.AlbumStatus, AlbumGenres.GenreID
+            FROM Album 
+            LEFT JOIN AlbumGenres ON Album.AlbumID = AlbumGenres.AlbumID
+            LEFT JOIN Artist ON Album.ArtistID = Artist.ArtistID
+            WHERE AlbumGenres.GenreID = :genreID
             ORDER BY Album.AverageRating DESC
             LIMIT 1";
 

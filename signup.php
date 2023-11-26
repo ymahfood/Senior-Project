@@ -75,22 +75,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <nav>
         <div class="nav-buttons">
-            <a href="login.php"><button>Login</button></a>
-            <a href="homepage.php"><button>Home</button></a>
-            <a href="top_chart.php"><button>Charts</button></a>
-            <a href = "profile.php"><button>Profile: 
             <?php
             if (isset($_SESSION['username'])) {
-                echo $_SESSION['username'];
-                echo " ";
-                echo $_SESSION['user_id'];
+                echo '<a href="logout.php"><button>Logout</button></a>';
             } else {
-                echo "No Profile Found";
+                echo '<a href="login.php"><button>Login</button></a>';
             }
             ?>
+            <a href="homepage.php"><button>Home</button></a>
+            <a href="top_chart.php"><button>Charts</button></a>
+            <div class="profile-button">
+            <a href="profile.php"><button>Profile:
+                <?php
+                if (isset($_SESSION['username'])) {
+                    echo $_SESSION['username'];
+                    echo " ";
+                    echo $_SESSION['user_id'];
+                } else {
+                    echo "No Profile Found";
+                }
+                ?>
             </button></a>
+            <a href="usersettings.php"><button>Settings</button></a>
+            </div>
         </div>
     </nav>
+
+    <?php if ($_SESSION['user_type'] == 'Admin'): ?>
+        <nav class="admin-nav">
+            <div class="nav-buttons">
+                <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="add_artist.php"><button>Add Artist</button></a>
+            </div>
+        </nav>
+    <?php endif; ?>
 
     <main>
         <div class = "signup-form">
@@ -114,7 +132,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <label for="password">Password:</label>
                     <input type="password" id="password" name="password" required>
                 </div>
-                <button type="submit">Submit</button>
+                <p></p>
+                <button type="submit">Signup</button>
             </form>
         </div>
     </main>

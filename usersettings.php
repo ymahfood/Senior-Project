@@ -127,6 +127,15 @@
         </div>
     </nav> 
 
+    <?php if ($_SESSION['user_type'] == 'Admin'): ?>
+        <nav class="admin-nav">
+            <div class="nav-buttons">
+                <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="add_artist.php"><button>Add Artist</button></a>
+            </div>
+        </nav>
+    <?php endif; ?>
+
     <main>
     <div class="user-settings">
         <h2>User Settings</h2>
@@ -166,6 +175,38 @@
             echo '<p class="error">' . $error . '</p>';
         }
         ?>
+        <form action="artistverification.php" method="post">
+            <h2>Request Artist Verification</h2>
+            <p>Submit this form to request artist verification.</p>
+
+            <div class="form-group">
+                <label for="artistID">Select Artist:</label>
+                <select name="artistID" required>
+                    <?php
+                    $artistQuery = "SELECT ArtistID, ArtistName FROM Artist";
+                    $artistStatement = $mysqli->prepare($artistQuery);
+                    $artistStatement->execute();
+                    $artists = $artistStatement->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    foreach ($artists as $artist) {
+                        echo "<option value=\"{$artist['ArtistID']}\">{$artist['ArtistName']}</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="twitter">Twitter Handle:</label>
+                <input type="text" name="twitter" value="">
+            </div>
+
+            <div class="form-group">
+                <label for="managementEmail">Management Email:</label>
+                <input type="text" name="managementEmail" value="">
+            </div>
+
+            <button type="submit">Submit Request</button>
+        </form>
     </div>
 </main>
 

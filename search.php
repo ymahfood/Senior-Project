@@ -81,13 +81,21 @@ if (isset($_GET['search'])) {
         </div>
     </nav>
 
+    <?php if ($_SESSION['user_type'] == 'Admin'): ?>
+        <nav class="admin-nav">
+            <div class="nav-buttons">
+                <a href="verification_requests.php"><button>Verification Requests</button></a>
+            </div>
+        </nav>
+    <?php endif; ?>
+
     <section class="featured-albums">
         <h2>Search Results:</h2>
         <b><p>Albums:</p></b>
         <?php
         if (count($results) > 0) {
             foreach ($results as $r) {
-                echo "<div class='album'>";
+                echo "<div class='search-results'>";
                 echo "<h3><a href='album.php?album_id={$r['AlbumID']}'>{$r['AlbumName']}</a></h3>";
                 echo "<p><a href='artist.php?artist_id={$r['ArtistID']}'>{$r['ArtistName']}</a></p>";
                 echo "<p>Date: {$r['ReleaseDate']}</p>";
@@ -103,7 +111,7 @@ if (isset($_GET['search'])) {
         <?php
         if (count($artists) > 0) {
             foreach ($artists as $a) {
-                echo "<div class ='album'>";
+                echo "<div class ='search-results'>";
                 echo "<h3><a href='artist.php?artist_id={$a['ArtistID']}'>{$a['ArtistName']}</a></h3>";
                 echo "</div>";
             }

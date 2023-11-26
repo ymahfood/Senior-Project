@@ -6,6 +6,8 @@ require_once("database.php");
 $mysqli = Database::dbConnect();
 $mysqli->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+$session_user_id = $_SESSION['user_id'];
+
 if ($_GET['artist_id']){
     $artistID = $_GET['artist_id'];
 } else {
@@ -20,13 +22,11 @@ function getArtistDetails($artistID, $mysqli) {
             WHERE Artist.ArtistID = :artistID";
 
     $stmt = $mysqli->prepare($query);
-
     if (!$stmt) {
         die("Query failed: " . $mysqli->error());
     }
     $stmt->bindParam(':artistID', $artistID, PDO::PARAM_INT);
     $stmt->execute();
-    
     $details = $stmt->fetchAll(PDO::FETCH_ASSOC);
     return $details;
 }
@@ -85,12 +85,26 @@ function getArtistDetails($artistID, $mysqli) {
         </div>
     </nav>
 
+    <?php if ($_SESSION['user_type'] == 'Admin'): ?>
+        <nav class="admin-nav">
+            <div class="nav-buttons">
+                <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="add_artist.php"><button>Add Artist</button></a>
+            </div>
+        </nav>
+    <?php endif; ?>
+
     <section class="artist-page">
-        <h2>Artist</h2>
         <?php
         $artistDetails = getArtistDetails($artistID, $mysqli);
         
         if($artistDetails[0]['ArtistStatus'] != 'Deleted'){
+            $typeQuery = "SELECT ArtistID FROM UserArtist WHERE UserID = :userID";
+            $typeStmt = $mysqli->prepare($typeQuery);
+            $typeStmt->bindParam(':userID', $session_user_id, PDO::PARAM_INT);
+            $typeStmt->execute();
+            $idMatch = $typeStmt->fetch(PDO::FETCH_ASSOC);            
+
             echo "<h2>{$artistDetails[0]['ArtistName']}</h2>";
             if (isset($_SESSION['user_type']) && $_SESSION['user_type'] == 'Admin') {
                 echo "<form action='delete_artist.php' method='POST'>";
@@ -102,15 +116,34 @@ function getArtistDetails($artistID, $mysqli) {
 
             if ($artistDetails) {
                 foreach ($artistDetails as $album) {
-                    if ($album['AlbumStatus'] != 'Deleted'){
+                    if ($album['AlbumStatus'] != 'Deleted' && isset($album['AlbumName'])){
                         echo "<div class='album'>";
                         echo "<h3><a href='album.php?album_id={$album['AlbumID']}'>{$album['AlbumName']}</a></h3>";
                         echo "<p>Average Rating: {$album['AverageRating']}</p>";
                         echo "</div>";
+                    } else {
+                        echo "<p>No albums found for this artist.</p>";
                     }
                 }
             } else {
                 echo "<p>Artist not found.<p>";
+            }
+            if (isset($_SESSION['user_type']) && $_SESSION['user_type'] == 'Artist' && $idMatch['ArtistID'] == $artistID || $_SESSION['user_type'] == 'Admin') {
+                echo "<h3>Add Album:</h3>";
+                echo "<form action='add_album.php' method='POST'>";
+                echo "<input type='hidden' name='artist_id' value='{$artistID}'>";
+            
+                echo "<label for='album_name'>Album Name:</label>";
+                echo "<input type='text' name='album_name' required><br>";
+            
+                echo "<label for='release_date'>Release Date:</label>";
+                echo "<input type='date' name='release_date' required><br>";
+
+                echo "<label for='genres'>Genres (Separate With Commas):</label>";
+                echo "<input type='text' name='genres' required><br>";
+            
+                echo "<button type='submit'>Add Album</button>";
+                echo "</form>";
             }
         } else {
             echo "<p>Error: Artist has been removed.</p>";

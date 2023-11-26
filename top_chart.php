@@ -71,6 +71,15 @@ function getTopRatedAlbums($mysqli) {
         </div>
     </nav>
 
+    <?php if ($_SESSION['user_type'] == 'Admin'): ?>
+        <nav class="admin-nav">
+            <div class="nav-buttons">
+                <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="add_artist.php"><button>Add Artist</button></a>
+            </div>
+        </nav>
+    <?php endif; ?>
+
     <section class="featured-albums">
         <h2>Top 100 Albums of All Time</h2>
 

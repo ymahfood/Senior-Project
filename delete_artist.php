@@ -84,6 +84,14 @@
         </div>
     </nav>
 
+    <?php if ($_SESSION['user_type'] == 'Admin'): ?>
+        <nav class="admin-nav">
+            <div class="nav-buttons">
+                <a href="verification_requests.php"><button>Verification Requests</button></a>
+            </div>
+        </nav>
+    <?php endif; ?>
+
     <body>
 
         <h1>Delete Artist Confirmation</h1>
