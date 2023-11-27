@@ -12,40 +12,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $mysqli = Database::dbConnect();
     $mysqli->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $queryCheck = "SELECT COUNT(*) AS count FROM Rating WHERE AlbumID = :albumID AND UserID = :userID";
+    $queryCheck = "SELECT NumRatings, AverageRating FROM Album WHERE AlbumID = :albumID";
     $stmtCheck = $mysqli->prepare($queryCheck);
     $stmtCheck->bindParam(':albumID', $albumID, PDO::PARAM_INT);
-    $stmtCheck->bindParam(':userID', $user_id, PDO::PARAM_INT);
     $stmtCheck->execute();
     $resultCheck = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
-    if ($resultCheck['count'] > 0) {
+    if ($resultCheck['NumRatings'] > 0) {
+        // Fetch the existing rating for the user
+        $queryGetExistingRating = "SELECT Rating FROM Rating WHERE AlbumID = :albumID AND UserID = :userID";
+        $stmtGetExistingRating = $mysqli->prepare($queryGetExistingRating);
+        $stmtGetExistingRating->bindParam(':albumID', $albumID, PDO::PARAM_INT);
+        $stmtGetExistingRating->bindParam(':userID', $user_id, PDO::PARAM_INT);
+        $stmtGetExistingRating->execute();
+        $existingRating = $stmtGetExistingRating->fetch(PDO::FETCH_ASSOC);
+
         $queryUserRatingUpdate = "UPDATE Rating SET Rating = :rating, Review = :review WHERE AlbumID = :albumID AND UserID = :userID";
         $stmtUserRatingUpdate = $mysqli->prepare($queryUserRatingUpdate);
         $stmtUserRatingUpdate->bindParam(':rating', $rating, PDO::PARAM_INT);
         $stmtUserRatingUpdate->bindParam(':albumID', $albumID, PDO::PARAM_INT);
         $stmtUserRatingUpdate->bindParam(':userID', $user_id, PDO::PARAM_INT);
         $stmtUserRatingUpdate->bindParam(':review', $review, PDO::PARAM_STR);
+
         if ($stmtUserRatingUpdate->execute()) {
-            $query2 = "SELECT Rating FROM Rating WHERE AlbumID = :albumID";
-            $stmt2 = $mysqli->prepare($query2);
-            $stmt2->bindParam(':albumID', $albumID, PDO::PARAM_INT);
-            $stmt2->execute();
-            $ratings = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+            // Calculate the updated average rating
+            $avg = $resultCheck['AverageRating'];
+            // $averageRating = ($avg * )
+            $queryUpdateAverageRating = "UPDATE Album SET AverageRating = (AverageRating * :totalRatings - :existingRating + :rating) / :totalRatings WHERE AlbumID = :albumID";
+            $stmtUpdateAverageRating = $mysqli->prepare($queryUpdateAverageRating);
+            $stmtUpdateAverageRating->bindParam(':rating', $rating, PDO::PARAM_INT);
+            $stmtUpdateAverageRating->bindParam(':existingRating', $existingRating['Rating'], PDO::PARAM_INT);
+            $stmtUpdateAverageRating->bindParam(':totalRatings', $resultCheck['NumRatings'], PDO::PARAM_INT);
+            $stmtUpdateAverageRating->bindParam(':albumID', $albumID, PDO::PARAM_INT);
+            $stmtUpdateAverageRating->execute();
 
-            $totalRatings = count($ratings);
-            $sumRatings = array_sum(array_column($ratings, 'Rating'));
-            $averageRating = $totalRatings > 0 ? $sumRatings / $totalRatings : 0;
-
-            $query3 = "UPDATE Album SET AverageRating = :averageRating WHERE AlbumID = :albumID";
-            $stmt3 = $mysqli->prepare($query3);
-            $stmt3->bindParam(':averageRating', $averageRating, PDO::PARAM_STR);
-            $stmt3->bindParam(':albumID', $albumID, PDO::PARAM_INT);
-            $stmt3->execute();
             header("Location: album.php?album_id=$albumID");
             exit();
         } else {
-            echo "Error updating rating: " . $stmtInsert->error;
+            echo "Error updating rating: " . $stmtUserRatingUpdate->error;
         }
     } else {
         $queryInsert = "INSERT INTO Rating (Rating, AlbumID, UserID, Review) VALUES (:rating, :albumID, :userID, :review)";
@@ -56,18 +60,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmtInsert->bindParam(':review', $review, PDO::PARAM_STR);
 
         if ($stmtInsert->execute()) {
-            $query2 = "SELECT Rating FROM Rating WHERE AlbumID = :albumID";
+            $query2 = "SELECT NumRatings, AverageRating FROM Album WHERE AlbumID = :albumID";
             $stmt2 = $mysqli->prepare($query2);
             $stmt2->bindParam(':albumID', $albumID, PDO::PARAM_INT);
             $stmt2->execute();
-            $ratings = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+            $ratings = $stmt2->fetch(PDO::FETCH_ASSOC);
 
-            $totalRatings = count($ratings);
-            $sumRatings = array_sum(array_column($ratings, 'Rating'));
-            $averageRating = $totalRatings > 0 ? $sumRatings / $totalRatings : 0;
+            $totalRatings = $ratings['NumRatings'] + 1;
 
-            $query3 = "UPDATE Album SET AverageRating = :averageRating WHERE AlbumID = :albumID";
+            // Fetch the most recent rating
+            $queryRecentRating = "SELECT Rating FROM Rating WHERE AlbumID = :albumID ORDER BY RatingID DESC LIMIT 1";
+            $stmtRecentRating = $mysqli->prepare($queryRecentRating);
+            $stmtRecentRating->bindParam(':albumID', $albumID, PDO::PARAM_INT);
+            $stmtRecentRating->execute();
+            $mostRecentRating = $stmtRecentRating->fetch(PDO::FETCH_ASSOC)['Rating'];
+
+            // Calculate the updated average rating by incorporating the most recent rating
+            $aggregateScore = ($totalRatings * $ratings['AverageRating']) + $mostRecentRating;
+            $averageRating = $aggregateScore / $totalRatings;
+
+            $query3 = "UPDATE Album SET NumRatings = :numRatings, AverageRating = :averageRating WHERE AlbumID = :albumID";
             $stmt3 = $mysqli->prepare($query3);
+            $stmt3->bindParam(':numRatings', $totalRatings, PDO::PARAM_INT);
             $stmt3->bindParam(':averageRating', $averageRating, PDO::PARAM_STR);
             $stmt3->bindParam(':albumID', $albumID, PDO::PARAM_INT);
             $stmt3->execute();

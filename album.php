@@ -14,7 +14,7 @@ require_once("database.php");
     }
 
     function getAlbumDetails($albumID, $mysqli) {
-        $query = "SELECT Album.AlbumID, Artist.ArtistID, Album.AlbumName, Artist.ArtistName, Album.ReleaseDate, Album.AverageRating, Album.AlbumStatus, AlbumGenres.GenreID, Genres.GenreName
+        $query = "SELECT Album.AlbumID, Artist.ArtistID, Album.AlbumName, Artist.ArtistName, Album.ReleaseDate, Album.AverageRating, Album.NumRatings, Album.AlbumStatus, AlbumGenres.GenreID, Genres.GenreName
                 FROM Album
                 LEFT JOIN Artist ON Album.ArtistID = Artist.ArtistID
                 LEFT JOIN AlbumGenres ON Album.AlbumID = AlbumGenres.AlbumID
@@ -162,7 +162,7 @@ require_once("database.php");
                         echo "<hr></hr>";
                         echo "<p>Genres: {$albumDetails['genreNames']}</p>";
                         echo "<hr></hr>";
-                        echo "<p>Number of Ratings: {$numRatings['count']}</p>";
+                        echo "<p>Number of Ratings: {$albumDetails['details']['NumRatings']}</p>";
                         echo "<hr></hr>";
                         echo "<p>Average Rating: {$albumDetails['details']['AverageRating']}</p>";
                         echo "<hr></hr>";

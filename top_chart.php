@@ -7,9 +7,10 @@ require_once("database.php");
 	$mysqli->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 function getTopRatedAlbums($mysqli) {
-    $query = "SELECT Album.AlbumID, Artist.ArtistID, Album.AlbumName, Artist.ArtistName, Album.AverageRating, Album.ReleaseDate, Album.AlbumStatus
+    $query = "SELECT Album.AlbumID, Artist.ArtistID, Album.AlbumName, Artist.ArtistName, Album.AverageRating, Album.NumRatings, Album.ReleaseDate, Album.AlbumStatus
             FROM Album LEFT JOIN Artist ON Album.ArtistID = Artist.ArtistID
-            ORDER BY Album.AverageRating DESC";
+            ORDER BY Album.AverageRating DESC
+            LIMIT 100";
 
     $stmt = $mysqli->prepare($query);
     $stmt -> execute();
@@ -92,6 +93,7 @@ function getTopRatedAlbums($mysqli) {
                 echo "<h3>{$number}. <a href='album.php?album_id={$album['AlbumID']}'>{$album['AlbumName']}</a></h3>";
                 echo "<p><a href='artist.php?artist_id={$album['ArtistID']}'>{$album['ArtistName']}</a></p>";
                 echo "<p>Date: {$album['ReleaseDate']}</p>";
+                echo "<p>Number of Ratings: {$album['NumRatings']}</p>";
                 echo "<p>Rating: {$album['AverageRating']}</p>";
                 echo "</div>";
             }

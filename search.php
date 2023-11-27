@@ -11,14 +11,14 @@ if (isset($_GET['search'])) {
     $query = 'SELECT Album.AlbumID, Album.AlbumName, Album.ArtistID, Artist.ArtistName, Album.ReleaseDate, Album.AverageRating 
             FROM Album LEFT JOIN Artist 
             ON Album.ArtistID = Artist.ArtistID 
-            WHERE AlbumName LIKE :search';
+            WHERE AlbumName LIKE :search LIMIT 5';
     
     $stmt = $mysqli->prepare($query);
     $stmt->bindParam(":search", $searchKeyword, PDO::PARAM_STR);
     $stmt->execute();
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $query2 = 'SELECT ArtistID, ArtistName FROM Artist WHERE ArtistName LIKE :search';
+    $query2 = 'SELECT ArtistID, ArtistName FROM Artist WHERE ArtistName LIKE :search LIMIT 5';
     $stmt2 = $mysqli->prepare($query2);
     $stmt2->bindParam(":search", $searchKeyword, PDO::PARAM_STR);
     $stmt2->execute();
