@@ -26,9 +26,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($stmt->rowCount() > 0 || $stmt2->rowCount() > 0) {
             if ($stmt->rowCount() > 0 && $stmt2->rowCount() > 0) {
-                $error_message = "Username and Email already in use. {$username} {$email}";
+                $error_message = "Username and Email already in use.";
             } elseif ($stmt->rowCount() > 0) {
-                $error_message = "Username already taken. Please try again. {$username} {$email}";
+                $error_message = "Username already taken. Please try again.";
             } elseif ($stmt2->rowCount() > 0) {
                 $error_message = "Email already in use. Try another.";
             }

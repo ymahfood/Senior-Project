@@ -119,7 +119,7 @@ function getArtistDetails($artistID, $mysqli) {
                     if ($album['AlbumStatus'] != 'Deleted' && isset($album['AlbumName'])){
                         echo "<div class='album'>";
                         echo "<h3><a href='album.php?album_id={$album['AlbumID']}'>{$album['AlbumName']}</a></h3>";
-                        echo "<p>Average Rating: {$album['AverageRating']}</p>";
+                        echo "<p>Average Rating: ". round($album['AverageRating'], 2) . "</p>";
                         echo "</div>";
                     } else {
                         echo "<p>No albums found for this artist.</p>";

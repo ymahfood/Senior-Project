@@ -3,21 +3,36 @@ session_start();
 
 require_once("database.php");
 
-    $mysqli = Database::dbConnect();
-	$mysqli->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$mysqli = Database::dbConnect();
+$mysqli->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-function getTopRatedAlbums($mysqli) {
+// Function to get top rated albums with pagination
+function getTopRatedAlbums($mysqli, $start, $perPage) {
     $query = "SELECT Album.AlbumID, Artist.ArtistID, Album.AlbumName, Artist.ArtistName, Album.AverageRating, Album.NumRatings, Album.ReleaseDate, Album.AlbumStatus
             FROM Album LEFT JOIN Artist ON Album.ArtistID = Artist.ArtistID
-            ORDER BY Album.AverageRating DESC
-            LIMIT 100";
+            ORDER BY ((3 * Album.AverageRating) + (0.01 * SQRT(Album.NumRatings))) DESC
+            LIMIT :start, :perPage";
 
     $stmt = $mysqli->prepare($query);
-    $stmt -> execute();
+    $stmt->bindParam(':start', $start, PDO::PARAM_INT);
+    $stmt->bindParam(':perPage', $perPage, PDO::PARAM_INT);
+    $stmt->execute();
     $albums = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     return $albums;
 }
+
+// Determine the current page number
+$page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+
+// Set the number of results per page
+$perPage = 20;
+
+// Calculate the starting index for the SQL LIMIT clause
+$start = ($page - 1) * $perPage;
+
+// Get top rated albums for the current page
+$topAlbums = getTopRatedAlbums($mysqli, $start, $perPage);
 ?>
 
 <!DOCTYPE html>
@@ -81,28 +96,43 @@ function getTopRatedAlbums($mysqli) {
         </nav>
     <?php endif; ?>
 
+    
     <section class="featured-albums">
         <h2>Top 100 Albums of All Time</h2>
 
         <?php
-        $topAlbums = getTopRatedAlbums($mysqli);
-        $number = 1;
+        $number = $start + 1;
         foreach ($topAlbums as $album) {
-            if($album['AlbumStatus'] != 'Deleted') {
+            if ($album['AlbumStatus'] != 'Deleted') {
                 echo "<div class='chart-albums'>";
                 echo "<h3>{$number}. <a href='album.php?album_id={$album['AlbumID']}'>{$album['AlbumName']}</a></h3>";
                 echo "<p><a href='artist.php?artist_id={$album['ArtistID']}'>{$album['ArtistName']}</a></p>";
                 echo "<p>Date: {$album['ReleaseDate']}</p>";
                 echo "<p>Number of Ratings: {$album['NumRatings']}</p>";
-                echo "<p>Rating: {$album['AverageRating']}</p>";
+                echo "<p>Rating: " . round($album['AverageRating'], 2) . "</p>";
                 echo "</div>";
             }
-            $number = $number + 1;
+            $number++;
         }
         ?>
+
+        <!-- Pagination links -->
+        <div class="pagination">
+            <?php
+            // Calculate the total number of pages
+            $totalPages = ceil(count(getTopRatedAlbums($mysqli, 0, PHP_INT_MAX)) / $perPage);
+
+            // Display pagination links
+            echo "<div class='pagination'>";
+            for ($i = 1; $i <= min(5, $totalPages); $i++) {
+                echo "<a href='top_chart.php?page=$i'>$i</a>";
+            }
+            echo "</div>";
+            ?>
+        </div>
 
     </section>
 
 </body>
 
-</html> 
+</html>

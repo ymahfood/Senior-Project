@@ -77,30 +77,32 @@ require_once("database.php");
         <h2>Featured Albums</h2>
 
         <?php
-        foreach($genres as $genre) {
+        foreach ($genres as $genre) {
             $gid = $genre['GenreID'];
 
             $query = "SELECT Album.AlbumID, Artist.ArtistID, Album.AlbumName, Artist.ArtistName, Album.AverageRating, Album.ReleaseDate, Album.AlbumStatus, AlbumGenres.GenreID
-            FROM Album 
-            LEFT JOIN AlbumGenres ON Album.AlbumID = AlbumGenres.AlbumID
-            LEFT JOIN Artist ON Album.ArtistID = Artist.ArtistID
-            WHERE AlbumGenres.GenreID = :genreID
-            ORDER BY Album.AverageRating DESC
-            LIMIT 1";
+                    FROM Album 
+                    LEFT JOIN AlbumGenres ON Album.AlbumID = AlbumGenres.AlbumID
+                    LEFT JOIN Artist ON Album.ArtistID = Artist.ArtistID
+                    WHERE AlbumGenres.GenreID = :genreID
+                    ORDER BY Album.AverageRating DESC
+                    LIMIT 1";
 
             $stmt = $mysqli->prepare($query);
             $stmt->bindParam(':genreID', $gid, PDO::PARAM_INT);
             $stmt->execute();
             $album = $stmt->fetch(PDO::FETCH_ASSOC);
 
+            $artistName = $album['ArtistName'];
+            $albumName = $album['AlbumName'];
 
             echo "<b><p>{$genre['GenreName']}:</p></b>";
-            if($album['AlbumStatus'] != 'Deleted') {
+            if ($album['AlbumStatus'] != 'Deleted') {
                 echo "<div class='homepage-album'>";
                 echo "<h3><a href='album.php?album_id={$album['AlbumID']}'>{$album['AlbumName']}</a></h3>";
-                echo "<p><a href='artist.php?artist_id={$album['ArtistID']}'>{$album['ArtistName']}</a></p>";
+                echo "<p><a href='artist.php?artist_id={$album['ArtistID']}'>$artistName</a></p>";
                 echo "<p>Date: {$album['ReleaseDate']}</p>";
-                echo "<p>Rating: {$album['AverageRating']}</p>";
+                echo "<p>Rating: " . round($album['AverageRating'], 2) . "</p>";
                 echo "</div>";
             }
         }

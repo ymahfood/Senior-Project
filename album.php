@@ -43,7 +43,7 @@ require_once("database.php");
         ];
     }
 
-    $reviewQuery = "SELECT Rating.Rating, Rating.Review, Rating.UserID, Rating.AlbumID, User.Username
+    $reviewQuery = "SELECT Rating.RatingID, Rating.Rating, Rating.Review, Rating.UserID, Rating.AlbumID, User.Username
     FROM Rating 
     LEFT JOIN User ON Rating.UserID = User.UserID
     WHERE Rating.AlbumID = :albumID";
@@ -137,6 +137,16 @@ require_once("database.php");
                         $lastfm_call = file_get_contents("https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=0b393a85d0b34580aa099c1623623d83&artist={$artist}&album={$album}&format=json");
                         $data = json_decode($lastfm_call, true);
 
+                        if (isset($data['album']['image']) && is_array($data['album']['image']) && !empty($data['album']['image'])) {
+                            // Get the URL of the large image (you can change 'large' to other sizes if needed)
+                            $largeImageURL = $data['album']['image'][3]['#text'];
+                
+                            // Output the image HTML
+                            echo "<div class='album-image-container'>";
+                            echo "<img src='$largeImageURL' alt='Album Image'>";
+                            echo "</div>";
+                        }
+
                         echo "<div class='tracklist-container'>";
                         if (isset($data['album']['tracks']['track']) && is_array($data['album']['tracks']['track'])) {
                             $tracks = $data['album']['tracks']['track'];
@@ -164,7 +174,7 @@ require_once("database.php");
                         echo "<hr></hr>";
                         echo "<p>Number of Ratings: {$albumDetails['details']['NumRatings']}</p>";
                         echo "<hr></hr>";
-                        echo "<p>Average Rating: {$albumDetails['details']['AverageRating']}</p>";
+                        echo "<p>Average Rating: " . round($albumDetails['details']['AverageRating'], 2) . "</p>";
                         echo "<hr></hr>";
                         echo "</div>";
                         if(isset($_SESSION['username'])) {
@@ -181,7 +191,7 @@ require_once("database.php");
 
                             $presetValue = $ratingStmt->fetch(PDO::FETCH_ASSOC);
 
-                            for ($i = 1; $i <= 5; $i++) {
+                            for ($i = 0.5; $i <= 5; $i += 0.5) {
                                 $selected = ($i == $presetValue['Rating']) ? 'selected' : '';
                                 echo "<option value='{$i}' {$selected}>{$i}</option>";
                             }
@@ -228,6 +238,13 @@ require_once("database.php");
                                 echo "<p>Rating: {$reviews['Rating']}</p>";
                                 if($reviews['Review']) {
                                     echo "<p>Review: {$reviews['Review']}</p>";
+                                }
+                                if(isset($_SESSION['user_type']) && $_SESSION['user_type'] == 'Admin') {
+                                    $ratingID = $reviews['RatingID'];
+                                    echo "<form action='remove_review.php' method='POST'>";
+                                    echo "<input type='hidden' name='rating_id' value='{$ratingID}'>";
+                                    echo "<input type='submit' value='Remove Review'>";
+                                    echo "</form>";
                                 }
                                 echo "</div>";
                             }
