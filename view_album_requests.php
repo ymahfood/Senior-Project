@@ -5,7 +5,7 @@ require_once('database.php');
 $mysqli = Database::dbConnect();
 $mysqli->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-$query = "SELECT * FROM ArtistVerificationRequest";
+$query = "SELECT * FROM AlbumRequest";
 $stmt = $mysqli->prepare($query);
 $stmt -> execute();
 $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -75,28 +75,32 @@ $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <?php endif; ?>
 
     <section class="verification-page">
-    <h2>Artist Verification Requests</h2>
+    <h2>Album Requests</h2>
+
+    <p>Make sure to do research before accepting a request.</p>
+    <p>Before accepting a request, make sure you create a new artist if the artist is not already in our database.</p>
+    <p>Also, add the album to the artist's page before accepting the request<p>
 
     <?php
     if ($requests != NULL) {
         $pendingRequestsExist = false; // Flag to check if there are pending requests
     
         foreach ($requests as $request) {
-            if ($request['VerificationStatus'] == 'Pending') {
+            if ($request['RequestStatus'] == 'Pending') {
                 $pendingRequestsExist = true; // Set the flag to true if at least one request is pending
     
                 echo "<b><p>Request:</p></b>";
                 echo "<div class='verification-requests'>";
                 echo "<h3>Username: <a href='user_profiles.php?profile_id={$request['UserID']}'>{$request['Username']}</a></h3>";
-                echo "<p>Artist Name: <a href='artist.php?artist_id={$request['ArtistID']}'>{$request['ArtistName']}</a></p>";
-                echo "<p>Twitter Handle: {$request['TwitterHandle']}</p>";
-                echo "<p>Management Email: {$request['ManagementEmail']}</p>";
+                echo "<p>Artist Name: {$request['ArtistName']}</p>";
+                echo "<b><p>Album Name: {$request['AlbumName']}</p></b>";
+                echo "<p>Genres: {$request['Genres']}</p>";
+                echo "<p>Release Date: {$request['ReleaseDate']}</p>";
     
                 // Add buttons for accepting and denying
-                echo "<form action='process_verification.php' method='post'>";
+                echo "<form action='process_request.php' method='post'>";
                 echo "<input type='hidden' name='request_id' value='{$request['RequestID']}'>";
                 echo "<input type='hidden' name='user_id' value='{$request['UserID']}'>";
-                echo "<input type='hidden' name='artist_id' value='{$request['ArtistID']}'>";
                 echo "<button type='submit' name='accept_request'>Accept Request</button>";
                 echo "<p> </p>";
                 echo "<button type='submit' name='deny_request'>Deny Request</button>";

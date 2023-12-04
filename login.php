@@ -17,11 +17,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($password, $user['PasswordHash'])) {
-        $_SESSION['user_id'] = $user['UserID'];
-        $_SESSION['username'] = $user['Username'];
-        $_SESSION['user_type'] = $user['UserType'];
-        header("Location: homepage.php");
-        exit;
+        if ($user['UserType'] == 'Deleted') {
+            $error_message = "Your account has been suspended. Please contact support (yourfavalbum@gmail.com) for assistance.";
+        } else {
+            $_SESSION['user_id'] = $user['UserID'];
+            $_SESSION['username'] = $user['Username'];
+            $_SESSION['user_type'] = $user['UserType'];
+            header("Location: homepage.php");
+            exit;
+        }
     } else {
         $error_message = "Invalid username or password. Please try again.";
     }
@@ -112,7 +116,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </form>
             <div><p>Don't have an account?</p></div>
             <a href = "signup.php"><button type = "signup">Sign Up</button></a>
+
+            <div><p>Forgot your password? Please contact us at yourfavalbum@gmail.com</p></div>
         </div>
+
     </main>
 
 </body>

@@ -7,27 +7,27 @@
         exit();
     }
 
-    $artistID = isset($_POST['artist_id']) ? $_POST['artist_id'] : null;
+    $profileID = isset($_POST['profile_id']) ? $_POST['profile_id'] : null;
 
-    if ($artistID) {
+    if ($profileID) {
         if (isset($_POST['confirm_delete'])) {
             $mysqli = Database::dbConnect();
             $mysqli->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-            $deleteQuery = "UPDATE Artist SET ArtistStatus = 'Deleted' WHERE ArtistID = :artistID";
+            $deleteQuery = "UPDATE User SET UserType = 'Deleted' WHERE UserID = :userID";
             $deleteStmt = $mysqli->prepare($deleteQuery);
-            $deleteStmt->bindParam(':artistID', $artistID, PDO::PARAM_INT);
+            $deleteStmt->bindParam(':userID', $profileID, PDO::PARAM_INT);
     
             try {
                 $deleteStmt->execute();
-                header("Location: artist.php?artist_id=$artistID");
+                header("Location: user_profiles.php?profile_id=$profileID");
                 exit();
             } catch (PDOException $e) {
                 echo "Error: " . $e->getMessage();
             }
         }
     } else {
-        header("Location: artist.php?artist_id=$artistID");
+        header("Location: user_profiles.php?profile_id=$profileID");
         exit();
     }
 ?>
@@ -95,18 +95,19 @@
     <?php endif; ?>
 
     <body>
+        <div class='delete-confirmation'>
+            <h1>Suspend User Confirmation</h1>
 
-        <h1>Delete Artist Confirmation</h1>
+            <p>Are you sure you want to suspend this user?</p>
 
-        <p>Are you sure you want to delete this artist?</p>
-
-        <form action="delete_artist.php" method="post">
-            <input type="hidden" name="artist_id" value="<?php echo $artistID; ?>">
-            <button type="submit" name="confirm_delete">Yes, delete</button>
-            <?php echo "<a href=artist.php?artist_id=$artistID>No, go back</a>";?>
-        </form>
+            <form action="suspend_user.php" method="post">
+                <input type="hidden" name="profile_id" value="<?php echo $profileID; ?>">
+                <button type="submit" name="confirm_delete">Yes, delete</button>
+                <?php echo "<a href=user_profiles.php?profile_id=$profileID>No, go back</a>";?>
+            </form>
+        </div>
     </body>
 
 </body>
 
-</html>
+</html> 

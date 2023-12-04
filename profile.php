@@ -86,6 +86,7 @@ $userType = $userStmt->fetch(PDO::FETCH_ASSOC);
         <nav class="admin-nav">
             <div class="nav-buttons">
                 <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="view_album_requests.php"><button>Album Requests</button></a>
                 <a href="add_artist.php"><button>Add Artist</button></a>
             </div>
         </nav>
@@ -96,6 +97,8 @@ $userType = $userStmt->fetch(PDO::FETCH_ASSOC);
         
 
         if (isset($_SESSION['user_id'])) {
+            echo "<p>Edit your profile here: <a href='usersettings.php'><button>Settings</button></a></p>";
+            echo "<hr></hr>";
             echo "<h><b>Profile: $username</b></h>";
             if ($userType['UserType'] == 'Artist'){
                 $artistQuery = "SELECT Artist.ArtistName, UserArtist.ArtistID FROM Artist LEFT JOIN UserArtist ON Artist.ArtistID = UserArtist.ArtistID WHERE UserArtist.UserID = :userID";
@@ -161,13 +164,18 @@ $userType = $userStmt->fetch(PDO::FETCH_ASSOC);
                     echo "</div>";
                 }
                 echo "</div>";
+                
+                $lastfmUserProfileLink = "http://www.last.fm/user/{$lastfmuser}";
+                echo "<div class='lastfm-profile-button'>";
+                echo "<a href='{$lastfmUserProfileLink}' target='_blank'><button>View Last.fm Profile</button></a>";
+                echo "</div>";
             }
             echo "<h2> User Ratings: </h2>";
             echo "<form action='' method='get'>";
             echo "<label for='selectedRating'>Select Rating:</label>";
             echo "<select name='selectedRating' id='selectedRating'>";
 
-            $options = array('All', '5.0', '4.0', '3.0', '2.0', '1.0');
+            $options = array('All', '5.0', '4.5', '4.0', '3.5', '3.0', '2.5', '2.0', '1.5', '1.0', '0.5');
             foreach ($options as $option) {
                 $selected = ($_GET['selectedRating'] == $option) ? 'selected' : '';
                 echo "<option value='$option' $selected>$option</option>";

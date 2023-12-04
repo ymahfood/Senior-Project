@@ -7,6 +7,10 @@
         exit();
     }
 
+    if ($_GET['request']){
+        $request_code = $_GET['request'];
+    }
+
     $mysqli = Database::dbConnect();
     $mysqli->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -131,6 +135,7 @@
         <nav class="admin-nav">
             <div class="nav-buttons">
                 <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="view_album_requests.php"><button>Album Requests</button></a>
                 <a href="add_artist.php"><button>Add Artist</button></a>
             </div>
         </nav>
@@ -138,6 +143,14 @@
 
     <main>
     <div class="user-settings">
+        <?php
+            if(isset($request_code) && $request_code == 1){
+                echo "<p>Request successful.</p>";
+            } elseif (isset($request_code) && $request_code == 0){
+                echo "<p>Request successful.</p>";
+            }
+        ?>
+
         <h2>User Settings</h2>
         <form action="usersettings.php" method="post">
             <div class="form-group">
@@ -170,6 +183,8 @@
             <button type="submit">Save Changes</button>
         </form>
 
+        <hr></hr>
+
         <?php
         if (isset($error)) {
             echo '<p class="error">' . $error . '</p>';
@@ -183,13 +198,14 @@
                 <label for="artistID">Select Artist:</label>
                 <select name="artistID" required>
                     <?php
-                    $artistQuery = "SELECT ArtistID, ArtistName FROM Artist";
+                    $artistQuery = "SELECT ArtistID, ArtistName FROM Artist ORDER BY ArtistName";
                     $artistStatement = $mysqli->prepare($artistQuery);
                     $artistStatement->execute();
                     $artists = $artistStatement->fetchAll(PDO::FETCH_ASSOC);
                     
                     foreach ($artists as $artist) {
-                        echo "<option value=\"{$artist['ArtistID']}\">{$artist['ArtistName']}</option>";
+                        $limitedName = strlen($artist['ArtistName']) > 30 ? substr($artist['ArtistName'], 0, 60) . '...' : $artist['ArtistName'];
+                        echo "<option value=\"{$artist['ArtistID']}\">{$limitedName}</option>";
                     }
                     ?>
                 </select>
@@ -203,6 +219,35 @@
             <div class="form-group">
                 <label for="managementEmail">Management Email:</label>
                 <input type="text" name="managementEmail" value="">
+            </div>
+
+            <button type="submit">Submit Request</button>
+        </form>
+
+        <hr></hr>
+
+        <form action="albumrequest.php" method="post">
+            <h2>Request An Album</h2>
+            <p>Submit this form to request an album.</p>
+
+            <div class="form-group">
+                <label for="album_name">Album Name:</label>
+                <input type="text" name="album_name" value="">
+            </div>
+
+            <div class="form-group">
+                <label for='artist_name'>Artist Name:</label>
+                <input type='text' name='artist_name' value=''>
+            </div>
+
+            <div class="form-group">
+                <label for="genres">Genre(s):</label>
+                <input type="text" name="genres" value="">
+            </div>
+
+            <div class="form-group">
+                <label for="date">Release Date:</label>
+                <input type="date" name="date" value="">
             </div>
 
             <button type="submit">Submit Request</button>

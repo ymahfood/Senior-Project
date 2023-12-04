@@ -31,6 +31,12 @@ function getArtistDetails($artistID, $mysqli) {
     return $details;
 }
 
+$userQuery = "SELECT UserArtist.UserID, User.Username FROM UserArtist LEFT JOIN User ON UserArtist.UserID = User.UserID WHERE ArtistID = :artistID";
+$userStmt = $mysqli->prepare($userQuery);
+$userStmt->bindParam(':artistID', $artistID, PDO::PARAM_INT);
+$userStmt->execute();
+$userDetails = $userStmt -> fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <!DOCTYPE html>
@@ -89,6 +95,7 @@ function getArtistDetails($artistID, $mysqli) {
         <nav class="admin-nav">
             <div class="nav-buttons">
                 <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="view_album_requests.php"><button>Album Requests</button></a>
                 <a href="add_artist.php"><button>Add Artist</button></a>
             </div>
         </nav>
@@ -97,7 +104,6 @@ function getArtistDetails($artistID, $mysqli) {
     <section class="artist-page">
         <?php
         $artistDetails = getArtistDetails($artistID, $mysqli);
-        
         if($artistDetails[0]['ArtistStatus'] != 'Deleted'){
             $typeQuery = "SELECT ArtistID FROM UserArtist WHERE UserID = :userID";
             $typeStmt = $mysqli->prepare($typeQuery);
@@ -106,6 +112,9 @@ function getArtistDetails($artistID, $mysqli) {
             $idMatch = $typeStmt->fetch(PDO::FETCH_ASSOC);            
 
             echo "<h2>{$artistDetails[0]['ArtistName']}</h2>";
+            if (isset($userDetails[0])) {
+                echo "<p>This artist has a profile on our website, check them out here: <a href='user_profiles.php?profile_id={$userDetails[0]['UserID']}'>{$userDetails[0]['Username']}</a></p>";
+            }
             if (isset($_SESSION['user_type']) && $_SESSION['user_type'] == 'Admin') {
                 echo "<form action='delete_artist.php' method='POST'>";
                 echo "<input type='hidden' name='artist_id' value='{$artistID}'>";
@@ -121,9 +130,11 @@ function getArtistDetails($artistID, $mysqli) {
                         echo "<h3><a href='album.php?album_id={$album['AlbumID']}'>{$album['AlbumName']}</a></h3>";
                         echo "<p>Average Rating: ". round($album['AverageRating'], 2) . "</p>";
                         echo "</div>";
-                    } else {
-                        echo "<p>No albums found for this artist.</p>";
                     }
+                }
+
+                if (!isset($artistDetails[0]['AlbumName'])) {
+                    echo "<p>No albums found for this artist.<p>";
                 }
             } else {
                 echo "<p>Artist not found.<p>";

@@ -9,9 +9,10 @@ $mysqli->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 // Function to get top rated albums with pagination
 function getTopRatedAlbums($mysqli, $start, $perPage) {
     $query = "SELECT Album.AlbumID, Artist.ArtistID, Album.AlbumName, Artist.ArtistName, Album.AverageRating, Album.NumRatings, Album.ReleaseDate, Album.AlbumStatus
-            FROM Album LEFT JOIN Artist ON Album.ArtistID = Artist.ArtistID
-            ORDER BY ((3 * Album.AverageRating) + (0.01 * SQRT(Album.NumRatings))) DESC
-            LIMIT :start, :perPage";
+        FROM Album LEFT JOIN Artist ON Album.ArtistID = Artist.ArtistID
+        WHERE Album.NumRatings >= 5000
+        ORDER BY ((3 * Album.AverageRating) + (0.01 * SQRT(Album.NumRatings))) DESC
+        LIMIT :start, :perPage";
 
     $stmt = $mysqli->prepare($query);
     $stmt->bindParam(':start', $start, PDO::PARAM_INT);
@@ -91,6 +92,7 @@ $topAlbums = getTopRatedAlbums($mysqli, $start, $perPage);
         <nav class="admin-nav">
             <div class="nav-buttons">
                 <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="view_album_requests.php"><button>Album Requests</button></a>
                 <a href="add_artist.php"><button>Add Artist</button></a>
             </div>
         </nav>

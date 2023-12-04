@@ -88,6 +88,8 @@
         <nav class="admin-nav">
             <div class="nav-buttons">
                 <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="view_album_requests.php"><button>Album Requests</button></a>
+                <a href="add_artist.php"><button>Add Artist</button></a>
             </div>
         </nav>
     <?php endif; ?>

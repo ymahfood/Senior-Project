@@ -32,10 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $verificationStatement->bindParam(':username', $username, PDO::PARAM_STR);
     
     if ($verificationStatement->execute()) {
-        header("Location: homepage.php");
+        header("Location: usersettings.php?request=1");
         exit();
     } else {
-        echo "Error submitting artist verification request.";
+        header("Location: usersettings.php?request=0");
+        exit();
     }
 
 }

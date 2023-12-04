@@ -43,7 +43,7 @@ require_once("database.php");
         ];
     }
 
-    $reviewQuery = "SELECT Rating.RatingID, Rating.Rating, Rating.Review, Rating.UserID, Rating.AlbumID, User.Username
+    $reviewQuery = "SELECT Rating.RatingID, Rating.Rating, Rating.Review, Rating.UserID, Rating.AlbumID, User.Username, User.UserType
     FROM Rating 
     LEFT JOIN User ON Rating.UserID = User.UserID
     WHERE Rating.AlbumID = :albumID";
@@ -111,6 +111,7 @@ require_once("database.php");
         <nav class="admin-nav">
             <div class="nav-buttons">
                 <a href="verification_requests.php"><button>Verification Requests</button></a>
+                <a href="view_album_requests.php"><button>Album Requests</button></a>
                 <a href="add_artist.php"><button>Add Artist</button></a>
             </div>
         </nav>
@@ -133,17 +134,20 @@ require_once("database.php");
                 $album = str_replace(' ', '%20', $album);
 
                 if ($albumDetails) {
-                    if($albumDetails['AlbumStatus'] != 'Deleted') {
+                    if($albumDetails['details']['AlbumStatus'] != 'Deleted') {
                         $lastfm_call = file_get_contents("https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=0b393a85d0b34580aa099c1623623d83&artist={$artist}&album={$album}&format=json");
                         $data = json_decode($lastfm_call, true);
 
                         if (isset($data['album']['image']) && is_array($data['album']['image']) && !empty($data['album']['image'])) {
                             // Get the URL of the large image (you can change 'large' to other sizes if needed)
+                            $lastfmUrl = "http://www.last.fm/music/{$artist}/{$album}";
                             $largeImageURL = $data['album']['image'][3]['#text'];
                 
                             // Output the image HTML
-                            echo "<div class='album-image-container'>";
+                            echo "<div class='cover-container'>";
+                            echo "<a href='{$lastfmUrl}' target='_blank'>";
                             echo "<img src='$largeImageURL' alt='Album Image'>";
+                            echo "</a>";
                             echo "</div>";
                         }
 
@@ -163,6 +167,7 @@ require_once("database.php");
                             echo "<p>No track data available.</p>";
                         }
                         echo "</div>";
+
                         echo "<h2>{$albumDetails['details']['AlbumName']}</h2>";
                         echo "<hr></hr>";
                         echo "<div class='indented-section'>";
@@ -226,29 +231,36 @@ require_once("database.php");
                                 }
                                 echo "</div>";
                             } else {
-                                echo "<p>No user rating found.</p>";
+                                echo "<p class='error'>No user rating found.</p>";
                             }
                         }
-                        
                         echo "<h2 class='reviews-heading'>Reviews:</h2>";
-                        foreach($reviewDetails as $reviews){
-                            if ($reviews['Review']) {
-                                echo "<div class = 'album'>";
-                                echo "<p><a href='user_profiles.php?profile_id={$reviews['UserID']}'>{$reviews['Username']}</a></p>";
-                                echo "<p>Rating: {$reviews['Rating']}</p>";
-                                if($reviews['Review']) {
-                                    echo "<p>Review: {$reviews['Review']}</p>";
+                        if (!empty($reviewDetails)) {
+                            foreach ($reviewDetails as $reviews) {
+                                if ($reviews['Review'] && $reviews['UserType'] != 'Deleted') {
+                                    echo "<div class='album'>";
+                                    echo "<p><a href='user_profiles.php?profile_id={$reviews['UserID']}'>{$reviews['Username']}</a></p>";
+                                    echo "<p>Rating: {$reviews['Rating']}</p>";
+                                    if ($reviews['Review']) {
+                                        echo "<p>Review: {$reviews['Review']}</p>";
+                                    }
+                                    if (isset($_SESSION['user_type']) && $_SESSION['user_type'] == 'Admin') {
+                                        $ratingID = $reviews['RatingID'];
+                                        echo "<form action='remove_review.php' method='POST'>";
+                                        echo "<input type='hidden' name='rating_id' value='{$ratingID}'>";
+                                        echo "<input type='submit' value='Remove Review'>";
+                                        echo "</form>";
+                                    }
+                                    echo "</div>";
                                 }
-                                if(isset($_SESSION['user_type']) && $_SESSION['user_type'] == 'Admin') {
-                                    $ratingID = $reviews['RatingID'];
-                                    echo "<form action='remove_review.php' method='POST'>";
-                                    echo "<input type='hidden' name='rating_id' value='{$ratingID}'>";
-                                    echo "<input type='submit' value='Remove Review'>";
-                                    echo "</form>";
-                                }
-                                echo "</div>";
                             }
+                        } else {
+                            echo "<p class='error'>No reviews found.</p>";
                         }
+
+                        echo "<div class='lastfm-button'>";
+                        echo "<a href='{$lastfmUrl}' target='_blank'><button>View on Last.fm</button></a>";
+                        echo "</div>";
                     } else {
                         echo "<p>Error: Album has been removed.</p>";
                     }
